@@ -1,5 +1,5 @@
 // ─── API Base ─────────────────────────────────────────────────────
-const API = 'http://localhost:5000/api';
+const API = 'https://jobflow-s3z4.onrender.com/api';
 
 async function req(method, path, body) {
   const opts = {
