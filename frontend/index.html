@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobFlow — Smart Application Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07070d;
+  --surface: #0f0f1a;
+  --surface2: #171726;
+  --border: #252538;
+  --accent: #6c63ff;
+  --accent-glow: rgba(108,99,255,0.25);
+  --orange: #f0723a;
+  --green: #3ecf8e;
+  --red: #e84545;
+  --yellow: #f0c040;
+  --text: #eeeeff;
+  --muted: #6e6e99;
+  --mono: 'DM Mono', monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse 60% 50% at 20% -10%,rgba(108,99,255,0.07),transparent),radial-gradient(ellipse 40% 40% at 80% 80%,rgba(62,207,142,0.04),transparent);pointer-events:none;z-index:0;}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+/* ─── Login Screen ─── */
+#loginScreen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:48px 40px;max-width:460px;width:90%;animation:fadeUp .5s ease;}
+.login-logo{font-size:42px;margin-bottom:6px;text-align:center;}
+.login-title{font-size:32px;font-weight:800;text-align:center;letter-spacing:-1px;margin-bottom:6px;}
+.login-title span{color:var(--accent);}
+.login-sub{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;margin-bottom:36px;line-height:1.6;}
+.login-divider{text-align:center;color:var(--muted);font-size:11px;font-family:var(--mono);margin:16px 0;position:relative;}
+.login-divider::before,.login-divider::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:var(--border);}
+.login-divider::before{left:0;}
+.login-divider::after{right:0;}
+.google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:14px;background:white;color:#333;border:none;border-radius:12px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:12px;}
+.google-btn:hover{background:#f0f0f0;transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,0.3);}
+.google-icon{width:20px;height:20px;}
+.guest-area{display:flex;flex-direction:column;gap:8px;}
+.guest-input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .2s;width:100%;}
+.guest-input:focus{border-color:var(--accent);}
+.guest-input::placeholder{color:var(--muted);}
+.guest-btn{padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Syne',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;}
+.guest-btn:hover{color:var(--text);border-color:var(--accent);}
+
+/* ─── Header ─── */
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(7,7,13,.92);backdrop-filter:blur(20px);z-index:100;}
+.logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;letter-spacing:-0.5px;}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--orange));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.logo span{color:var(--accent);}
+.header-right{display:flex;align-items:center;gap:12px;}
+.sync-btn{display:flex;align-items:center;gap:7px;padding:8px 16px;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--muted);font-family:'Syne',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}
+.sync-btn:hover{color:var(--text);border-color:var(--accent);}
+.sync-btn.syncing{border-color:var(--accent);color:var(--accent);}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
+.sync-dot.active{background:var(--green);animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.user-pill{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;transition:all .2s;}
+.user-pill img{width:24px;height:24px;border-radius:50%;}
+.user-pill:hover{border-color:var(--accent);}
+.add-btn{display:flex;align-items:center;gap:6px;padding:9px 18px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+.add-btn:hover{background:#7d75ff;transform:translateY(-1px);box-shadow:0 6px 20px var(--accent-glow);}
+
+/* ─── Main Layout ─── */
+#app{display:none;}
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 65px);}
+
+/* ─── Sidebar ─── */
+.sidebar{border-right:1px solid var(--border);padding:24px 16px;position:sticky;top:65px;height:calc(100vh - 65px);overflow-y:auto;}
+.sidebar-section{margin-bottom:28px;}
+.sidebar-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px;padding:0 8px;}
+.nav-item{display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:all .2s;margin-bottom:2px;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(108,99,255,.15);color:var(--accent);}
+.nav-item .left{display:flex;align-items:center;gap:8px;}
+.nav-badge{background:var(--surface2);color:var(--muted);font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:10px;min-width:22px;text-align:center;}
+.nav-item.active .nav-badge{background:var(--accent);color:#fff;}
+
+/* ─── Content ─── */
+.content{padding:28px 32px;min-width:0;}
+
+/* ─── Stats Row ─── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--card-top,var(--accent));}
+.stat-card .val{font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:2px;}
+.stat-card .lbl{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
+.stat-card .icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:26px;opacity:.25;}
+
+/* ─── Toolbar ─── */
+.toolbar{display:flex;gap:10px;margin-bottom:22px;align-items:center;flex-wrap:wrap;}
+.search-wrap{flex:1;min-width:200px;position:relative;}
+.search-wrap input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px 10px 38px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;transition:border-color .2s;}
+.search-wrap input:focus{border-color:var(--accent);}
+.search-wrap input::placeholder{color:var(--muted);}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;}
+select.filter-sel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;cursor:pointer;}
+.parse-btn{display:flex;align-items:center;gap:6px;padding:9px 16px;background:rgba(240,114,58,.12);border:1px solid rgba(240,114,58,.3);border-radius:9px;color:var(--orange);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.parse-btn:hover{background:rgba(240,114,58,.2);}
+
+/* ─── Grid ─── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+
+/* ─── Card ─── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;animation:fadeUp .35s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px;background:var(--c-accent,var(--accent));}
+.card:hover{border-color:var(--c-accent,var(--accent));transform:translateY(-2px);box-shadow:0 10px 32px rgba(0,0,0,.4);}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.co-logo{width:40px;height:40px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.card-actions{display:flex;gap:6px;}
+.icon-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .2s;}
+.icon-btn:hover{color:var(--text);border-color:var(--accent);}
+.icon-btn.del:hover{color:var(--red);border-color:var(--red);}
+.co-name{font-size:16px;font-weight:700;letter-spacing:-.3px;margin-bottom:2px;}
+.role{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:12px;}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;}
+.b-applied  {background:rgba(108,99,255,.15);color:var(--accent);}
+.b-interview{background:rgba(240,114,58,.15);color:var(--orange);}
+.b-offered  {background:rgba(62,207,142,.15);color:var(--green);}
+.b-rejected {background:rgba(232,69,69,.15);color:var(--red);}
+.b-ghosted  {background:rgba(110,110,153,.15);color:var(--muted);}
+.b-saved    {background:rgba(240,192,64,.12);color:var(--yellow);}
+.b-withdrawn{background:rgba(110,110,153,.1);color:var(--muted);}
+.card-meta{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;}
+.meta-row{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.meta-row a{color:var(--accent);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;}
+.meta-row a:hover{text-decoration:underline;}
+.auto-tag{margin-left:auto;font-size:9px;padding:2px 6px;background:rgba(62,207,142,.12);color:var(--green);border-radius:4px;white-space:nowrap;}
+.email-count{font-size:9px;padding:2px 6px;background:rgba(108,99,255,.12);color:var(--accent);border-radius:4px;margin-left:4px;}
+.notes-p{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+/* ─── Empty State ─── */
+.empty{grid-column:1/-1;text-align:center;padding:70px 20px;}
+.empty .e-icon{font-size:52px;margin-bottom:14px;}
+.empty h3{font-size:20px;font-weight:700;margin-bottom:6px;}
+.empty p{font-family:var(--mono);font-size:12px;color:var(--muted);}
+
+/* ─── Modal ─── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .3s;}
+.overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;padding:32px;transform:translateY(24px);transition:transform .3s;}
+.overlay.open .modal{transform:translateY(0);}
+.modal-title{font-size:22px;font-weight:800;margin-bottom:24px;letter-spacing:-.5px;display:flex;align-items:center;gap:10px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.fg{margin-bottom:14px;}
+.fg.full{grid-column:1/-1;}
+.fg label{display:block;font-family:var(--mono);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px 13px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent);}
+.fg input::placeholder,.fg textarea::placeholder{color:var(--muted);}
+.fg select option{background:var(--surface2);}
+.fg textarea{resize:vertical;min-height:70px;font-family:var(--mono);}
+.modal-foot{display:flex;gap:10px;margin-top:6px;}
+.btn-p{flex:1;background:var(--accent);color:#fff;border:none;padding:12px;border-radius:9px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;}
+.btn-p:hover{background:#7d75ff;}
+.btn-s{padding:12px 20px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:9px;font-family:'Syne',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;}
+.btn-s:hover{color:var(--text);border-color:var(--text);}
+.ai-fill-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(240,114,58,.12);border:1px solid rgba(240,114,58,.3);border-radius:8px;color:var(--orange);font-size:12px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .2s;margin-bottom:16px;width:100%;justify-content:center;}
+.ai-fill-btn:hover{background:rgba(240,114,58,.2);}
+
+/* ─── Parse Modal ─── */
+#parseModal .modal{max-width:520px;}
+
+/* ─── Toast ─── */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;animation:fadeUp .3s ease;border:1px solid transparent;}
+.toast.success{background:rgba(62,207,142,.15);border-color:var(--green);color:var(--green);}
+.toast.error{background:rgba(232,69,69,.15);border-color:var(--red);color:var(--red);}
+.toast.info{background:rgba(108,99,255,.15);border-color:var(--accent);color:var(--accent);}
+
+/* ─── Insights Panel ─── */
+.insights-box{background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:10px;padding:14px;margin-top:10px;font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--text);}
+
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:560px){
+  header{padding:14px 16px;}
+  .content{padding:18px 14px;}
+  .form-row{grid-template-columns:1fr;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ─── Login Screen ─── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🚀</div>
+    <div class="login-title">Job<span>Flow</span></div>
+    <div class="login-sub">Smart job application tracker with<br>Gmail auto-sync & AI insights</div>
+
+    <a href="http://localhost:5000/api/auth/google" style="text-decoration:none;">
+      <button class="google-btn">
+        <svg class="google-icon" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Continue with Google (Gmail sync)
+      </button>
+    </a>
+
+    <div class="login-divider">or use without Gmail</div>
+
+    <div class="guest-area">
+      <input class="guest-input" id="guestEmail" type="email" placeholder="Your email address">
+      <input class="guest-input" id="guestName" type="text" placeholder="Your name (optional)">
+      <button class="guest-btn" onclick="guestLogin()">Continue as Guest →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── App ─── -->
+<div id="app">
+  <header>
+    <div class="logo"><div class="logo-icon">🚀</div>Job<span>Flow</span></div>
+    <div class="header-right">
+      <button class="sync-btn" id="syncBtn" onclick="triggerSync()">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncLabel">Sync Gmail</span>
+      </button>
+      <div class="user-pill" onclick="logoutUser()">
+        <img id="userPic" src="https://api.dicebear.com/7.x/identicon/svg?seed=user" alt="">
+        <span id="userName">User</span>
+      </div>
+      <button class="add-btn" onclick="openAddModal()">＋ Add</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Filter</div>
+        <div class="nav-item active" data-filter="all" onclick="setFilter('all',this)">
+          <div class="left">📋 All</div><div class="nav-badge" id="cnt-all">0</div>
+        </div>
+        <div class="nav-item" data-filter="saved" onclick="setFilter('saved',this)">
+          <div class="left">💾 Saved</div><div class="nav-badge" id="cnt-saved">0</div>
+        </div>
+        <div class="nav-item" data-filter="applied" onclick="setFilter('applied',this)">
+          <div class="left">📨 Applied</div><div class="nav-badge" id="cnt-applied">0</div>
+        </div>
+        <div class="nav-item" data-filter="interview" onclick="setFilter('interview',this)">
+          <div class="left">🎙 Interview</div><div class="nav-badge" id="cnt-interview">0</div>
+        </div>
+        <div class="nav-item" data-filter="offered" onclick="setFilter('offered',this)">
+          <div class="left">🎉 Offered</div><div class="nav-badge" id="cnt-offered">0</div>
+        </div>
+        <div class="nav-item" data-filter="rejected" onclick="setFilter('rejected',this)">
+          <div class="left">❌ Rejected</div><div class="nav-badge" id="cnt-rejected">0</div>
+        </div>
+        <div class="nav-item" data-filter="ghosted" onclick="setFilter('ghosted',this)">
+          <div class="left">👻 Ghosted</div><div class="nav-badge" id="cnt-ghosted">0</div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Actions</div>
+        <div class="nav-item" onclick="openParseModal()"><div class="left">🤖 AI Parse Email</div></div>
+        <div class="nav-item" onclick="exportCSV()"><div class="left">⬇ Export CSV</div></div>
+        <div class="nav-item" onclick="document.getElementById('csvInput').click()"><div class="left">⬆ Import CSV</div></div>
+        <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="importCSV(event)">
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="content">
+      <div class="stats-row" id="statsRow">
+        <div class="stat-card" style="--card-top:var(--accent)"><div class="val" id="s-total">0</div><div class="lbl">Total</div><div class="icon">📋</div></div>
+        <div class="stat-card" style="--card-top:var(--orange)"><div class="val" id="s-interview">0</div><div class="lbl">Interviews</div><div class="icon">🎙</div></div>
+        <div class="stat-card" style="--card-top:var(--green)"><div class="val" id="s-offered">0</div><div class="lbl">Offers</div><div class="icon">🎉</div></div>
+        <div class="stat-card" style="--card-top:var(--accent)"><div class="val" id="s-rate">0%</div><div class="lbl">Response Rate</div><div class="icon">📊</div></div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchQ" placeholder="Search company, role, location..." oninput="loadApps()">
+        </div>
+        <select class="filter-sel" id="typeFilter" onchange="loadApps()">
+          <option value="">All Types</option>
+          <option>Internship</option><option>Full-time</option>
+          <option>Part-time</option><option>Contract</option><option>Freelance</option>
+        </select>
+        <select class="filter-sel" id="sortFilter" onchange="loadApps()">
+          <option value="createdAt">Newest</option>
+          <option value="company">Company A–Z</option>
+          <option value="lastActivityDate">Last Activity</option>
+        </select>
+        <button class="parse-btn" onclick="openParseModal()">🤖 AI Parse Email</button>
+      </div>
+
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Add/Edit Modal ─── -->
+<div class="overlay" id="appOverlay" onclick="closeIfOutside(event,'appOverlay')">
+  <div class="modal">
+    <div class="modal-title" id="appModalTitle">📝 Add Application</div>
+
+    <button class="ai-fill-btn" onclick="openParseModal(true)">🤖 Auto-fill from Email Text</button>
+
+    <div class="form-row">
+      <div class="fg"><label>Company *</label><input type="text" id="f_company" placeholder="Google, Microsoft..."></div>
+      <div class="fg"><label>Role *</label><input type="text" id="f_role" placeholder="SWE Intern, PM..."></div>
+    </div>
+    <div class="form-row">
+      <div class="fg">
+        <label>Status</label>
+        <select id="f_status">
+          <option value="saved">💾 Saved</option>
+          <option value="applied" selected>📨 Applied</option>
+          <option value="interview">🎙 Interview</option>
+          <option value="offered">🎉 Offered</option>
+          <option value="rejected">❌ Rejected</option>
+          <option value="ghosted">👻 Ghosted</option>
+          <option value="withdrawn">↩ Withdrawn</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Type</label>
+        <select id="f_type">
+          <option>Internship</option><option>Full-time</option>
+          <option>Part-time</option><option>Contract</option><option>Freelance</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>Applied Date</label><input type="date" id="f_date"></div>
+      <div class="fg"><label>Follow-up Deadline</label><input type="date" id="f_deadline"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>📧 HR Email</label><input type="text" id="f_email" placeholder="hr@company.com"></div>
+      <div class="fg"><label>👤 HR Name</label><input type="text" id="f_hrname" placeholder="Jane Smith"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>🔗 LinkedIn URL</label><input type="url" id="f_linkedin" placeholder="linkedin.com/jobs/..."></div>
+      <div class="fg"><label>🌐 Job Posting URL</label><input type="url" id="f_url" placeholder="https://..."></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>📍 Location</label><input type="text" id="f_location" placeholder="Remote / Bengaluru..."></div>
+      <div class="fg"><label>💰 Salary / Stipend</label><input type="text" id="f_salary" placeholder="₹60k/month..."></div>
+    </div>
+    <div class="fg full"><label>Notes</label><textarea id="f_notes" placeholder="Referral contact, interview rounds, deadlines..."></textarea></div>
+    <div class="fg full" id="insightsArea" style="display:none">
+      <label>🤖 AI Insights</label>
+      <div class="insights-box" id="insightsText"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-s" onclick="closeModal('appOverlay')">Cancel</button>
+      <button class="btn-p" onclick="getAIInsights()" style="flex:unset;padding:12px 16px;background:rgba(240,114,58,.15);color:var(--orange);border:1px solid rgba(240,114,58,.3);" id="insightsBtn" title="Get AI Insights" style="display:none">🤖</button>
+      <button class="btn-p" onclick="saveApp()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── AI Parse Modal ─── -->
+<div class="overlay" id="parseOverlay" onclick="closeIfOutside(event,'parseOverlay')">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title">🤖 AI Email Parser</div>
+    <p style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6;">Paste any job-related email below. AI will extract company, role, status, HR contact, and more automatically.</p>
+    <div class="fg full">
+      <label>Email Content</label>
+      <textarea id="parseEmailText" style="min-height:160px" placeholder="Paste the full email here — subject, body, sender info..."></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-s" onclick="closeModal('parseOverlay')">Cancel</button>
+      <button class="btn-p" onclick="runAIParse()">🤖 Parse & Fill</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Toasts ─── -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="js/api.js"></script>
+<script>
+// ─── State ────────────────────────────────────────────────────────
+let currentFilter = 'all';
+let editingId = null;
+let fillAfterParse = false;
+let currentUser = null;
+
+const EMOJIS = {G:'🔵',A:'🟠',M:'🟣',F:'🟡',T:'🔶',I:'🔷',S:'⭐',N:'🟤',W:'🌊',P:'🟢',R:'🔴',default:'💼'};
+const COLOR = {applied:'var(--accent)',interview:'var(--orange)',offered:'var(--green)',rejected:'var(--red)',ghosted:'var(--muted)',saved:'var(--yellow)',withdrawn:'var(--muted)'};
+
+function logo(name) { const c=(name||'?').toUpperCase()[0]; return EMOJIS[c]||EMOJIS.default; }
+
+// ─── Init ─────────────────────────────────────────────────────────
+async function init() {
+  // Check URL params
+  const params = new URLSearchParams(location.search);
+  if (params.get('auth') === 'success') { history.replaceState({},'',' '); toast('Gmail connected! 🎉','success'); }
+  if (params.get('auth_error')) { toast('Google login failed. Try guest mode.','error'); }
+
+  try {
+    const { user } = await api.me();
+    if (user) {
+      currentUser = user;
+      showApp();
+    }
+  } catch(_) {}
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('userName').textContent = currentUser.name || currentUser.email;
+  if (currentUser.picture) document.getElementById('userPic').src = currentUser.picture;
+  loadAll();
+  checkSyncStatus();
+}
+
+async function guestLogin() {
+  const email = document.getElementById('guestEmail').value.trim();
+  if (!email) return toast('Enter your email','error');
+  try {
+    const name = document.getElementById('guestName').value.trim();
+    const { user } = await api.loginGuest(email, name);
+    currentUser = user;
+    showApp();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function logoutUser() {
+  if (!confirm('Logout?')) return;
+  await api.logout().catch(()=>{});
+  location.reload();
+}
+
+// ─── Load Data ────────────────────────────────────────────────────
+async function loadAll() {
+  await Promise.all([loadApps(), loadStats()]);
+}
+
+async function loadApps() {
+  const search = document.getElementById('searchQ').value;
+  const type = document.getElementById('typeFilter').value;
+  const sort = document.getElementById('sortFilter').value;
+  const params = { sort, limit: 100 };
+  if (currentFilter !== 'all') params.status = currentFilter;
+  if (search) params.search = search;
+  if (type) params.type = type;
+
+  try {
+    const { applications } = await api.getApps(params);
+    renderGrid(applications);
+  } catch(e) { toast('Failed to load applications','error'); }
+}
+
+async function loadStats() {
+  try {
+    const s = await api.getStats();
+    document.getElementById('s-total').textContent = s.total;
+    document.getElementById('s-interview').textContent = s.byStatus.interview || 0;
+    document.getElementById('s-offered').textContent = s.byStatus.offered || 0;
+    document.getElementById('s-rate').textContent = s.responseRate + '%';
+
+    // Update sidebar counts
+    const all = s.total;
+    document.getElementById('cnt-all').textContent = all;
+    ['saved','applied','interview','offered','rejected','ghosted'].forEach(k => {
+      const el = document.getElementById('cnt-'+k);
+      if (el) el.textContent = s.byStatus[k] || 0;
+    });
+  } catch(_){}
+}
+
+// ─── Render Grid ──────────────────────────────────────────────────
+function renderGrid(apps) {
+  const grid = document.getElementById('grid');
+  if (!apps.length) {
+    grid.innerHTML = `<div class="empty"><div class="e-icon">📭</div><h3>No applications here</h3><p>Add one manually or sync your Gmail</p></div>`;
+    return;
+  }
+  grid.innerHTML = apps.map((a,i) => cardHTML(a,i)).join('');
+}
+
+function cardHTML(a, i) {
+  const emailBadge = a.emailThreads?.length ? `<span class="email-count">📧 ${a.emailThreads.length}</span>` : '';
+  const autoTag = a.autoTracked ? `<span class="auto-tag">auto</span>` : '';
+  const linkedinRow = a.linkedinUrl ? `<div class="meta-row">🔗 <a href="${a.linkedinUrl}" target="_blank" onclick="event.stopPropagation()">LinkedIn Post</a></div>` : '';
+  const emailRow = a.hrEmail ? `<div class="meta-row">📧 <span>${a.hrEmail}</span>${emailBadge}${autoTag}</div>` : '';
+  const dateRow = a.appliedDate ? `<div class="meta-row">📅 ${new Date(a.appliedDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})} · ${a.type||''}${a.location?' · '+a.location:''}</div>` : '';
+  const urlRow = a.jobUrl ? `<div class="meta-row">🌐 <a href="${a.jobUrl}" target="_blank" onclick="event.stopPropagation()">${a.jobUrl.replace(/https?:\/\//,'').slice(0,36)}…</a></div>` : '';
+  const notes = a.notes ? `<p class="notes-p">${a.notes}</p>` : '';
+  const deadline = a.followUpDate ? `<div class="meta-row" style="color:var(--orange)">⏰ Follow up by ${new Date(a.followUpDate).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>` : '';
+
+  return `<div class="card" style="--c-accent:${COLOR[a.status]||'var(--accent)'};animation-delay:${i*.04}s" onclick="editApp('${a._id}')">
+    <div class="card-top">
+      <div class="co-logo">${logo(a.company)}</div>
+      <div class="card-actions">
+        <button class="icon-btn" onclick="event.stopPropagation();editApp('${a._id}')" title="Edit">✏️</button>
+        <button class="icon-btn del" onclick="event.stopPropagation();deleteApp('${a._id}')" title="Delete">🗑</button>
+      </div>
+    </div>
+    <div class="co-name">${a.company}</div>
+    <div class="role">${a.role}</div>
+    <span class="badge b-${a.status}">${a.status}</span>
+    <div class="card-meta">${dateRow}${emailRow}${linkedinRow}${urlRow}${deadline}</div>
+    ${notes}
+  </div>`;
+}
+
+// ─── Filter ───────────────────────────────────────────────────────
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.nav-item[data-filter]').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  loadApps();
+}
+
+// ─── Modals ───────────────────────────────────────────────────────
+function openAddModal() {
+  editingId = null;
+  fillAfterParse = false;
+  document.getElementById('appModalTitle').textContent = '📝 Add Application';
+  clearForm();
+  document.getElementById('f_date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('insightsArea').style.display = 'none';
+  document.getElementById('insightsBtn').style.display = 'none';
+  document.getElementById('appOverlay').classList.add('open');
+}
+
+async function editApp(id) {
+  editingId = id;
+  try {
+    const a = await api.getApps({ search: '' }).then(() => null).catch(() => null);
+    // Fetch specific app
+    const resp = await fetch(`http://localhost:5000/api/applications/${id}`, { credentials: 'include' });
+    const app = await resp.json();
+
+    document.getElementById('appModalTitle').textContent = '✏️ Edit Application';
+    document.getElementById('f_company').value = app.company || '';
+    document.getElementById('f_role').value = app.role || '';
+    document.getElementById('f_status').value = app.status || 'applied';
+    document.getElementById('f_type').value = app.type || 'Internship';
+    document.getElementById('f_date').value = app.appliedDate ? app.appliedDate.split('T')[0] : '';
+    document.getElementById('f_deadline').value = app.followUpDate ? app.followUpDate.split('T')[0] : '';
+    document.getElementById('f_email').value = app.hrEmail || '';
+    document.getElementById('f_hrname').value = app.hrName || '';
+    document.getElementById('f_linkedin').value = app.linkedinUrl || '';
+    document.getElementById('f_url').value = app.jobUrl || '';
+    document.getElementById('f_location').value = app.location || '';
+    document.getElementById('f_salary').value = app.salary || '';
+    document.getElementById('f_notes').value = app.notes || '';
+
+    if (app.aiInsights) {
+      document.getElementById('insightsText').textContent = app.aiInsights;
+      document.getElementById('insightsArea').style.display = 'block';
+    } else {
+      document.getElementById('insightsArea').style.display = 'none';
+    }
+    document.getElementById('insightsBtn').style.display = '';
+    document.getElementById('appOverlay').classList.add('open');
+  } catch(e) { toast('Failed to load','error'); }
+}
+
+function clearForm() {
+  ['f_company','f_role','f_date','f_deadline','f_email','f_hrname','f_linkedin','f_url','f_location','f_salary','f_notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f_status').value = 'applied';
+  document.getElementById('f_type').value = 'Internship';
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeIfOutside(e, id) { if (e.target.id === id) closeModal(id); }
+
+// ─── Save App ─────────────────────────────────────────────────────
+async function saveApp() {
+  const company = document.getElementById('f_company').value.trim();
+  const role = document.getElementById('f_role').value.trim();
+  if (!company || !role) { toast('Company and role are required','error'); return; }
+
+  const data = {
+    company, role,
+    status:      document.getElementById('f_status').value,
+    type:        document.getElementById('f_type').value,
+    appliedDate: document.getElementById('f_date').value || null,
+    followUpDate:document.getElementById('f_deadline').value || null,
+    hrEmail:     document.getElementById('f_email').value.trim(),
+    hrName:      document.getElementById('f_hrname').value.trim(),
+    linkedinUrl: document.getElementById('f_linkedin').value.trim(),
+    jobUrl:      document.getElementById('f_url').value.trim(),
+    location:    document.getElementById('f_location').value.trim(),
+    salary:      document.getElementById('f_salary').value.trim(),
+    notes:       document.getElementById('f_notes').value.trim(),
+  };
+
+  try {
+    if (editingId) { await api.updateApp(editingId, data); toast('Updated ✓','success'); }
+    else           { await api.createApp(data);            toast('Added ✓','success'); }
+    closeModal('appOverlay');
+    loadAll();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function deleteApp(id) {
+  if (!confirm('Delete this application?')) return;
+  try {
+    await api.deleteApp(id);
+    toast('Deleted','info');
+    loadAll();
+  } catch(e) { toast(e.message,'error'); }
+}
+
+// ─── AI Insights ──────────────────────────────────────────────────
+async function getAIInsights() {
+  if (!editingId) { toast('Save the application first','info'); return; }
+  toast('Getting AI insights…','info');
+  try {
+    const { insights } = await api.getInsights(editingId);
+    document.getElementById('insightsText').textContent = insights;
+    document.getElementById('insightsArea').style.display = 'block';
+    toast('Insights ready 🤖','success');
+  } catch(e) { toast('AI insights failed: '+e.message,'error'); }
+}
+
+// ─── Gmail Sync ───────────────────────────────────────────────────
+async function triggerSync() {
+  const btn = document.getElementById('syncBtn');
+  const label = document.getElementById('syncLabel');
+  btn.classList.add('syncing');
+  label.textContent = 'Syncing…';
+  try {
+    const r = await api.syncEmails();
+    label.textContent = r.synced > 0 ? `Synced ${r.synced}` : 'Up to date';
+    if (r.synced > 0) { toast(`📧 Found ${r.synced} new email(s)!`,'success'); loadAll(); }
+    else toast('Inbox up to date','info');
+  } catch(e) {
+    toast(e.message.includes('not connected') ? 'Connect Gmail via Google login' : e.message, 'error');
+    label.textContent = 'Sync Gmail';
+  }
+  btn.classList.remove('syncing');
+  setTimeout(() => { label.textContent = 'Sync Gmail'; }, 4000);
+}
+
+async function checkSyncStatus() {
+  try {
+    const s = await api.syncStatus();
+    const dot = document.getElementById('syncDot');
+    dot.className = 'sync-dot' + (s.connected ? ' active' : '');
+  } catch(_) {}
+}
+
+// ─── AI Email Parse ───────────────────────────────────────────────
+function openParseModal(fillForm = false) {
+  fillAfterParse = fillForm;
+  document.getElementById('parseEmailText').value = '';
+  if (fillForm) closeModal('appOverlay');
+  document.getElementById('parseOverlay').classList.add('open');
+}
+
+async function runAIParse() {
+  const text = document.getElementById('parseEmailText').value.trim();
+  if (!text) { toast('Paste email text first','error'); return; }
+  toast('Parsing with AI…','info');
+  try {
+    const { parsed } = await api.parseEmail(text);
+    closeModal('parseOverlay');
+    toast('Parsed! ✓ Review & save','success');
+
+    if (fillAfterParse || !editingId) {
+      // Fill the add/edit form
+      document.getElementById('f_company').value = parsed.company || '';
+      document.getElementById('f_role').value = parsed.role || '';
+      if (parsed.status) document.getElementById('f_status').value = parsed.status;
+      if (parsed.type) document.getElementById('f_type').value = parsed.type;
+      document.getElementById('f_email').value = parsed.hrEmail || '';
+      document.getElementById('f_hrname').value = parsed.hrName || '';
+      document.getElementById('f_location').value = parsed.location || '';
+      document.getElementById('f_salary').value = parsed.salary || '';
+      document.getElementById('f_date').value = new Date().toISOString().split('T')[0];
+      if (parsed.followUpDate) document.getElementById('f_deadline').value = parsed.followUpDate.split('T')[0];
+      const notes = [parsed.summary, parsed.keyInfo].filter(Boolean).join('\n');
+      document.getElementById('f_notes').value = notes;
+      document.getElementById('appModalTitle').textContent = '🤖 Review Parsed Application';
+      document.getElementById('appOverlay').classList.add('open');
+    }
+  } catch(e) { toast('Parse failed: '+e.message,'error'); }
+}
+
+// ─── CSV Import/Export ────────────────────────────────────────────
+function exportCSV() {
+  api.getApps({ limit: 1000 }).then(({ applications }) => {
+    const headers = ['Company','Role','Status','Type','Location','Applied Date','HR Email','LinkedIn','Job URL','Notes'];
+    const rows = applications.map(a => [
+      a.company, a.role, a.status, a.type, a.location||'',
+      a.appliedDate ? new Date(a.appliedDate).toLocaleDateString() : '',
+      a.hrEmail||'', a.linkedinUrl||'', a.jobUrl||'', (a.notes||'').replace(/,/g,' ')
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'jobflow_export.csv';
+    a.click();
+    toast('Exported!','success');
+  });
+}
+
+async function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim().toLowerCase());
+  const rows = lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.replace(/"/g,'').trim());
+    return {
+      company: vals[headers.indexOf('company')] || 'Unknown',
+      role:    vals[headers.indexOf('role')]    || 'Unknown',
+      status:  vals[headers.indexOf('status')]  || 'applied',
+      type:    vals[headers.indexOf('type')]    || 'Internship',
+      location:vals[headers.indexOf('location')]|| '',
+      hrEmail: vals[headers.indexOf('hr email')]|| '',
+      linkedinUrl: vals[headers.indexOf('linkedin')]||'',
+      jobUrl:  vals[headers.indexOf('job url')] || '',
+      notes:   vals[headers.indexOf('notes')]   || '',
+    };
+  }).filter(r => r.company !== 'Unknown');
+
+  try {
+    const { imported } = await api.importCsv(rows);
+    toast(`Imported ${imported} applications ✓`,'success');
+    loadAll();
+  } catch(e) { toast('Import failed: '+e.message,'error'); }
+  event.target.value = '';
+}
+
+// ─── Toast ────────────────────────────────────────────────────────
+function toast(msg, type='info') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  document.getElementById('toastWrap').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
