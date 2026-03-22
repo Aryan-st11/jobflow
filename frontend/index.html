@@ -409,7 +409,7 @@ async function init() {
   try {
     const { user } = await api.me();
     if (user) {
-      currentUser = user;
+      currentUser = user
       showApp();
     }
   } catch(_) {}
@@ -540,7 +540,7 @@ async function editApp(id) {
   try {
     const a = await api.getApps({ search: '' }).then(() => null).catch(() => null);
     // Fetch specific app
-    const resp = await fetch(`http://localhost:5000/api/applications/${id}`, { credentials: 'include' });
+    const resp = await fetch(`https://jobflow-s3z4.onrender.com/api/applications/${id}`, { credentials: 'include' });
     const app = await resp.json();
 
     document.getElementById('appModalTitle').textContent = '✏️ Edit Application';
@@ -752,6 +752,8 @@ function toast(msg, type='info') {
 
 // ─── Boot ─────────────────────────────────────────────────────────
 init();
+
 </script>
 </body>
 </html>
+
